@@ -10,14 +10,20 @@ type DummyLoginRequest struct {
 }
 
 func DummyLoginHandler(w http.ResponseWriter, r *http.Request) {
-	var req DummyLoginRequest
+	type reqBody struct {
+		Role string `json:"role"`
+	}
+	var req reqBody
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(`{"message":"invalid json"}`))
+		http.Error(w, `{"message":"invalid json"}`, http.StatusBadRequest)
+		return
+	}
+	if req.Role == "" {
+		http.Error(w, `{"message":"role is required"}`, http.StatusBadRequest)
 		return
 	}
 
 	token := "SOME_TOKEN_" + req.Role
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`"` + token + `"`))
+	w.Header().Set("Content-Type", "application/json")
+	w.Write([]byte(`{"token":"` + token + `"}`))
 }

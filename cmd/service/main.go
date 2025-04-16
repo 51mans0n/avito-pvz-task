@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/51mans0n/avito-pvz-task/internal/api"
 	"github.com/51mans0n/avito-pvz-task/internal/db"
+	"github.com/go-chi/chi/v5"
 	"log"
 	"net/http"
 )
@@ -17,13 +18,39 @@ func main() {
 	}
 	defer database.Close()
 
-	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
+	repo := db.NewRepo(database)
+
+	r := chi.NewRouter()
+
+	// Health-check
+	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("OK"))
 	})
-	http.HandleFunc("/dummyLogin", api.DummyLoginHandler)
 
-	// TODO: тут потом будем подключать роутеры с swagger.yaml
+	// Dummy login (не требует авторизации)
+	r.Post("/dummyLogin", api.DummyLoginHandler)
 
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	// Endpoints, защищённые AuthMiddleware
+	r.Group(func(sub chi.Router) {
+		sub.Use(api.AuthMiddleware) // каждый запрос внутри sub будет проходить AuthMiddleware
+
+		// /pvz
+		sub.Route("/pvz", func(rpvz chi.Router) {
+			// POST /pvz -> Create
+			rpvz.Post("/", api.CreatePVZHandler(repo))
+
+			// GET /pvz -> List
+			rpvz.Get("/", api.GetPVZListHandler(repo))
+			rpvz.Post("/{pvzId}/delete_last_product", api.DeleteLastProductHandler(repo))
+			rpvz.Post("/{pvzId}/close_last_reception", api.CloseLastReceptionHandler(repo))
+		})
+
+		// /receptions
+		sub.Post("/receptions", api.CreateReceptionHandler(repo))
+
+		// /products
+		sub.Post("/products", api.CreateProductHandler(repo))
+	})
+
+	log.Fatal(http.ListenAndServe(":8080", r))
 }
