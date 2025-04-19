@@ -2,28 +2,20 @@ package api
 
 import (
 	"encoding/json"
+	"github.com/51mans0n/avito-pvz-task/internal/auth"
 	"net/http"
 )
 
-type DummyLoginRequest struct {
-	Role string `json:"role"`
-}
-
+// DummyLoginHandler ­— единственная ручка, которая выдаёт тестовый токен.
+// Теперь роль читаем НЕ из JSON‑тела, а из query‑параметра ?role=…
 func DummyLoginHandler(w http.ResponseWriter, r *http.Request) {
-	type reqBody struct {
-		Role string `json:"role"`
-	}
-	var req reqBody
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, `{"message":"invalid json"}`, http.StatusBadRequest)
-		return
-	}
-	if req.Role == "" {
-		http.Error(w, `{"message":"role is required"}`, http.StatusBadRequest)
+	role := r.URL.Query().Get("role")
+	if role == "" {
+		http.Error(w, `{"message":"role query param required"}`, http.StatusBadRequest)
 		return
 	}
 
-	token := "SOME_TOKEN_" + req.Role
+	token := auth.IssueDummyToken(role) // вернёт строку вида SOME_TOKEN_<role>
 	w.Header().Set("Content-Type", "application/json")
-	w.Write([]byte(`{"token":"` + token + `"}`))
+	_ = json.NewEncoder(w).Encode(map[string]string{"token": token})
 }

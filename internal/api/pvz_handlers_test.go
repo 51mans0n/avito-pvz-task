@@ -23,6 +23,17 @@ type mockRepo struct {
 
 var _ db.Repository = (*mockRepo)(nil)
 
+func (m *mockRepo) CreateUser(ctx context.Context, u *model.User) error {
+	args := m.Called(ctx, u)
+	return args.Error(0)
+}
+
+func (m *mockRepo) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
+	args := m.Called(ctx, email)
+	usr, _ := args.Get(0).(*model.User)
+	return usr, args.Error(1)
+}
+
 func (m *mockRepo) CreatePVZ(ctx context.Context, pvz *model.PVZ) error {
 	args := m.Called(ctx, pvz)
 	return args.Error(0)

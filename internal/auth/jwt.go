@@ -2,16 +2,60 @@ package auth
 
 import (
 	"errors"
+	"github.com/golang-jwt/jwt/v5"
 	"strings"
+	"time"
 )
 
-func ExtractRoleFromToken(token string) (string, error) {
+var secret = []byte("supersecret") // TODO: брать из config/env
+
+func ExtractRole(token string) (string, error) {
+	// dummy‑token
 	if strings.HasPrefix(token, "SOME_TOKEN_") {
 		role := strings.TrimPrefix(token, "SOME_TOKEN_")
-		if role == "moderator" || role == "employee" || role == "client" {
+		switch role {
+		case "moderator", "employee", "client":
 			return role, nil
+		default:
+			return "", errors.New("unknown role in dummy token")
 		}
-		return "", errors.New("unknown role in dummy token")
 	}
-	return "", errors.New("invalid token format")
+
+	// real JWT
+	parsed, err := jwt.Parse(token, func(t *jwt.Token) (any, error) {
+		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, errors.New("unexpected signing method")
+		}
+		return secret, nil
+	})
+	if err != nil || !parsed.Valid {
+		return "", errors.New("invalid token")
+	}
+
+	claims, ok := parsed.Claims.(jwt.MapClaims)
+	if !ok {
+		return "", errors.New("claims cast error")
+	}
+
+	role, ok := claims["role"].(string)
+	if !ok {
+		return "", errors.New("role claim missing")
+	}
+	return role, nil
+}
+
+// helper для dummyLogin
+func IssueDummyToken(role string) string { // "moderator"/"employee"/"client"
+	return "SOME_TOKEN_" + role
+}
+
+// helper для /login
+func IssueJWT(role, userID string, ttl time.Duration) (string, error) {
+	claims := jwt.MapClaims{
+		"role": role,
+		"sub":  userID,
+		"exp":  time.Now().Add(ttl).Unix(),
+	}
+	t := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return t.SignedString(secret)
 }

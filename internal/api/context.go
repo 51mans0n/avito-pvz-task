@@ -2,16 +2,20 @@ package api
 
 import "context"
 
-type ctxKeyRole struct{}
+// внутренний ключ ― чтобы не пересекаться с ключами
+type ctxKey string
 
+const roleKey ctxKey = "role"
+
+// WithRole кладёт роль в контекст
 func WithRole(ctx context.Context, role string) context.Context {
-	return context.WithValue(ctx, ctxKeyRole{}, role)
+	return context.WithValue(ctx, roleKey, role)
 }
 
+// GetRole достаёт роль из контекста
 func GetRole(ctx context.Context) string {
-	v := ctx.Value(ctxKeyRole{})
-	if s, ok := v.(string); ok {
-		return s
+	if v, ok := ctx.Value(roleKey).(string); ok {
+		return v
 	}
 	return ""
 }

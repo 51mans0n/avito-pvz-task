@@ -7,31 +7,23 @@ import (
 	"github.com/51mans0n/avito-pvz-task/internal/auth"
 )
 
+// AuthMiddleware проверяет Bearer‑токен и вкладывает роль в контекст.
 func AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Считываем заголовок
-		authHeader := r.Header.Get("Authorization")
-		if authHeader == "" {
-			http.Error(w, `{"message":"no authorization header"}`, http.StatusUnauthorized)
+		h := r.Header.Get("Authorization")
+		if !strings.HasPrefix(h, "Bearer ") {
+			http.Error(w, `missing bearer token`, http.StatusUnauthorized)
 			return
 		}
-		parts := strings.SplitN(authHeader, " ", 2)
-		if len(parts) != 2 || parts[0] != "Bearer" {
-			http.Error(w, `{"message":"invalid auth header format"}`, http.StatusUnauthorized)
-			return
-		}
-		token := parts[1]
-		role, err := auth.ExtractRoleFromToken(token)
+
+		token := strings.TrimPrefix(h, "Bearer ")
+		role, err := auth.ExtractRole(token) // <-- auth.ExtractRole мы писали раньше
 		if err != nil {
-			http.Error(w, `{"message":"invalid token"}`, http.StatusUnauthorized)
+			http.Error(w, `unauthorized: `+err.Error(), http.StatusUnauthorized)
 			return
 		}
 
-		// Кладём role в контекст
-		ctx := r.Context()
-		ctx = WithRole(ctx, role)
-
-		// передаём дальше
+		ctx := WithRole(r.Context(), role)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

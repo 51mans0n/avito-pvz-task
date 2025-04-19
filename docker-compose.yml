@@ -11,3 +11,16 @@ services:
       - "5432:5432"
     volumes:
       - ./scripts/sql:/docker-entrypoint-initdb.d
+      - ./migrations:/migrations:ro
+
+  migrator:
+    image: postgres:15
+    depends_on: [ db ]
+    volumes:
+      - ./migrations:/migrations:ro
+    # ждём пару секунд, затем последовательно применяем *.sql
+    entrypoint: [ "bash", "-c",
+      "sleep 5 && \
+        for f in /migrations/*.sql; do echo applying $f; psql -h db -U master -d master -f $f; done" ]
+    environment:
+      PGPASSWORD: master

@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"strings"
@@ -22,6 +23,8 @@ type Repository interface {
 	CreateProduct(ctx context.Context, pvzID string, prod *model.Product) error
 	DeleteLastProduct(ctx context.Context, pvzID string) error
 	CloseLastReception(ctx context.Context, pvzID string) (*model.Reception, error)
+	CreateUser(ctx context.Context, user *model.User) error
+	GetUserByEmail(ctx context.Context, email string) (*model.User, error)
 }
 
 // Убедимся, что *Repo реализует Repository:
@@ -306,4 +309,31 @@ func convertProducts(ps []*model.Product) []model.ProductResponse {
 
 func isNoRowsErr(err error) bool {
 	return err != nil && strings.Contains(err.Error(), "no rows in result set")
+}
+
+func (r *Repo) CreateUser(ctx context.Context, u *model.User) error {
+	q, args, _ := sq.
+		Insert("users").
+		Columns("id", "email", "pass_hash", "role").
+		Values(u.ID, u.Email, u.PassHash, u.Role).
+		PlaceholderFormat(sq.Dollar).ToSql()
+	_, err := r.db.ExecContext(ctx, q, args...)
+	return err
+}
+
+func (r *Repo) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
+	q, args, _ := sq.
+		Select("id", "email", "pass_hash", "role").
+		From("users").
+		Where(sq.Eq{"email": email}).
+		PlaceholderFormat(sq.Dollar).ToSql()
+
+	var u model.User
+	if err := r.db.GetContext(ctx, &u, q, args...); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &u, nil
 }

@@ -28,7 +28,7 @@ func main() {
 	})
 
 	// Dummy login (не требует авторизации)
-	r.Post("/dummyLogin", api.DummyLoginHandler)
+	r.Get("/dummyLogin", api.DummyLoginHandler)
 
 	// Endpoints, защищённые AuthMiddleware
 	r.Group(func(sub chi.Router) {
