@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"github.com/51mans0n/avito-pvz-task/internal/db"
+	"github.com/51mans0n/avito-pvz-task/internal/metrics"
 	"github.com/51mans0n/avito-pvz-task/internal/model"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -45,6 +46,9 @@ func CreateReceptionHandler(repo db.Repository) http.HandlerFunc {
 			http.Error(w, `{"message":"`+err.Error()+`"}`, http.StatusBadRequest)
 			return
 		}
+
+		metrics.ReceptionsAdded.Inc()
+
 		w.WriteHeader(http.StatusCreated)
 		json.NewEncoder(w).Encode(rec)
 	}

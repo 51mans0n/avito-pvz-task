@@ -1,26 +1,40 @@
 version: "3.8"
+
 services:
   db:
     image: postgres:15
-    container_name: avito_pvz_db
     environment:
       POSTGRES_USER: master
       POSTGRES_PASSWORD: master
       POSTGRES_DB: master
-    ports:
-      - "5432:5432"
+    ports: ["5432:5432"]
     volumes:
       - ./scripts/sql:/docker-entrypoint-initdb.d
       - ./migrations:/migrations:ro
 
   migrator:
     image: postgres:15
-    depends_on: [ db ]
-    volumes:
-      - ./migrations:/migrations:ro
-    # ждём пару секунд, затем последовательно применяем *.sql
-    entrypoint: [ "bash", "-c",
-      "sleep 5 && \
-        for f in /migrations/*.sql; do echo applying $f; psql -h db -U master -d master -f $f; done" ]
+    depends_on: [db]
+    entrypoint: ["bash","-c","sleep 5 && for f in /migrations/*.sql; do psql -h db -U master -d master -f $f; done"]
+    environment: { PGPASSWORD: master }
+    volumes: [ ./migrations:/migrations:ro ]
+
+  service:
+    build: .
+    depends_on: [db]
     environment:
-      PGPASSWORD: master
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: master
+      POSTGRES_PASSWORD: master
+      POSTGRES_DB: master
+    ports:
+      - "8080:8080"   # REST
+      - "3000:3000"   # gRPC
+      - "9000:9000"   # /metrics
+
+  prometheus:
+    image: prom/prometheus:v2.52.0
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports: ["9090:9090"]

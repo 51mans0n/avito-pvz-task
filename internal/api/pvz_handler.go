@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/51mans0n/avito-pvz-task/internal/metrics"
 	"net/http"
 	"strconv"
 	"time"
@@ -55,6 +56,9 @@ func CreatePVZHandler(repo db.Repository) http.HandlerFunc {
 			http.Error(w, `{"message":"server error"}`, http.StatusInternalServerError)
 			return
 		}
+
+		metrics.PVZCreated.Inc()
+
 		w.WriteHeader(http.StatusCreated)
 		json.NewEncoder(w).Encode(pvz)
 	}

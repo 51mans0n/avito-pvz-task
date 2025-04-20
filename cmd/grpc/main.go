@@ -1,7 +1,9 @@
 package main
 
 import (
-	"fmt"
+	"github.com/51mans0n/avito-pvz-task/internal/db"
+	grpcserver "github.com/51mans0n/avito-pvz-task/internal/grpc"
+	pvz_v1 "github.com/51mans0n/avito-pvz-task/pkg/proto/pvz/v1"
 	"log"
 	"net"
 
@@ -9,14 +11,21 @@ import (
 )
 
 func main() {
-	fmt.Println("Starting gRPC service on :3000...")
+	conn, err := db.InitDB()
+	if err != nil {
+		log.Fatalf("db: %v", err)
+	}
+	repo := db.NewRepo(conn)
+
+	s := grpc.NewServer()
+	pvz_v1.RegisterPVZServiceServer(s, grpcserver.New(repo))
 
 	lis, err := net.Listen("tcp", ":3000")
 	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+		log.Fatalf("listen: %v", err)
 	}
-
-	s := grpc.NewServer()
-	// TODO: Зарегать услугу тут
-	log.Fatal(s.Serve(lis))
+	log.Println("gRPC server :3000")
+	if err := s.Serve(lis); err != nil {
+		log.Fatalf("serve: %v", err)
+	}
 }
