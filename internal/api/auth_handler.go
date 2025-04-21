@@ -2,8 +2,11 @@ package api
 
 import (
 	"encoding/json"
-	"github.com/51mans0n/avito-pvz-task/internal/auth"
 	"net/http"
+
+	"github.com/51mans0n/avito-pvz-task/internal/logging"
+
+	"github.com/51mans0n/avito-pvz-task/internal/auth"
 )
 
 func DummyLoginHandler(w http.ResponseWriter, r *http.Request) {
@@ -27,5 +30,7 @@ func DummyLoginHandler(w http.ResponseWriter, r *http.Request) {
 	token := auth.IssueDummyToken(role)
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"token": token})
+	if err := json.NewEncoder(w).Encode(map[string]string{"token": token}); err != nil {
+		logging.S().Warnw("encode token", "err", err)
+	}
 }

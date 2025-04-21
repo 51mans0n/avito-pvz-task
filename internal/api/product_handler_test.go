@@ -3,14 +3,15 @@ package api_test
 import (
 	"bytes"
 	"context"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
 	"github.com/51mans0n/avito-pvz-task/internal/api"
 	"github.com/51mans0n/avito-pvz-task/internal/model"
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"net/http"
-	"net/http/httptest"
-	"testing"
 )
 
 func (m *mockRepo) CreateProduct(ctx context.Context, pvzID string, prod *model.Product) error {

@@ -3,10 +3,13 @@ package api
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/51mans0n/avito-pvz-task/internal/metrics"
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/51mans0n/avito-pvz-task/internal/logging"
+
+	"github.com/51mans0n/avito-pvz-task/internal/metrics"
 
 	"github.com/google/uuid"
 
@@ -60,7 +63,9 @@ func CreatePVZHandler(repo db.Repository) http.HandlerFunc {
 		metrics.PVZCreated.Inc()
 
 		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(pvz)
+		if err := json.NewEncoder(w).Encode(pvz); err != nil {
+			logging.S().Warnw("encode pvz", "err", err)
+		}
 	}
 }
 
@@ -98,7 +103,9 @@ func GetPVZListHandler(repo db.Repository) http.HandlerFunc {
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(result)
+		if err := json.NewEncoder(w).Encode(result); err != nil {
+			logging.S().Warnw("encode result", "err", err)
+		}
 	}
 }
 

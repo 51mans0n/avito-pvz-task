@@ -4,7 +4,6 @@ import (
 	"errors"
 	"github.com/golang-jwt/jwt/v5"
 	"strings"
-	"time"
 )
 
 var secret = []byte("supersecret") // TODO: брать из config/env
@@ -47,15 +46,4 @@ func ExtractRole(token string) (string, error) {
 // helper для dummyLogin
 func IssueDummyToken(role string) string { // "moderator"/"employee"/"client"
 	return "SOME_TOKEN_" + role
-}
-
-// helper для /login
-func IssueJWT(role, userID string, ttl time.Duration) (string, error) {
-	claims := jwt.MapClaims{
-		"role": role,
-		"sub":  userID,
-		"exp":  time.Now().Add(ttl).Unix(),
-	}
-	t := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return t.SignedString(secret)
 }

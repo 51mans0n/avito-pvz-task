@@ -2,13 +2,16 @@ package api
 
 import (
 	"encoding/json"
+	"net/http"
+	"time"
+
+	"github.com/51mans0n/avito-pvz-task/internal/logging"
+
 	"github.com/51mans0n/avito-pvz-task/internal/db"
 	"github.com/51mans0n/avito-pvz-task/internal/metrics"
 	"github.com/51mans0n/avito-pvz-task/internal/model"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
-	"net/http"
-	"time"
 )
 
 // CreateProductHandler - employee добавляет товар
@@ -51,7 +54,9 @@ func CreateProductHandler(repo db.Repository) http.HandlerFunc {
 		metrics.ProductsAdded.Inc()
 
 		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(prod)
+		if err := json.NewEncoder(w).Encode(prod); err != nil {
+			logging.S().Warnw("encode product", "err", err)
+		}
 	}
 }
 
@@ -75,6 +80,8 @@ func DeleteLastProductHandler(repo db.Repository) http.HandlerFunc {
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"message":"last product deleted"}`))
+		if _, err := w.Write([]byte(`{"message":"last product deleted"}`)); err != nil {
+			logging.S().Warnw("write response", "err", err)
+		}
 	}
 }

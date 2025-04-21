@@ -14,7 +14,7 @@ func TestPromMiddleware_Increments(t *testing.T) {
 	metrics.MustRegister()
 
 	h := metrics.PromMiddleware(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(http.StatusTeapot) // 418
+		w.WriteHeader(http.StatusTeapot)
 	}))
 
 	req := httptest.NewRequest(http.MethodGet, "/test", nil)
@@ -23,7 +23,8 @@ func TestPromMiddleware_Increments(t *testing.T) {
 
 	require.Equal(t, http.StatusTeapot, rr.Code)
 
-	// total counter должно == 1
-	total := testutil.ToFloat64(metrics.HTTPRequestsTotal)
+	total := testutil.ToFloat64(
+		metrics.HttpTotal.WithLabelValues("GET", "/test", "418"),
+	)
 	require.Equal(t, 1.0, total)
 }

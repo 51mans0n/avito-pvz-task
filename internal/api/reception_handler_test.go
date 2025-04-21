@@ -79,3 +79,85 @@ func TestCloseLastReceptionHandler_Success(t *testing.T) {
 
 	mr.AssertExpectations(t)
 }
+
+func TestCreateReception_InvalidJSON(t *testing.T) {
+	mr := new(mockRepo)
+	h := api.CreateReceptionHandler(mr)
+
+	req := httptest.NewRequest(http.MethodPost, "/receptions",
+		bytes.NewBufferString(`{ invalid json`))
+	ctx := api.WithRole(req.Context(), "employee")
+	req = req.WithContext(ctx)
+
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	require.Equal(t, http.StatusBadRequest, rr.Code)
+	mr.AssertExpectations(t)
+}
+
+func TestCreateReception_NoPVZ(t *testing.T) {
+	mr := new(mockRepo)
+	h := api.CreateReceptionHandler(mr)
+
+	req := httptest.NewRequest(http.MethodPost, "/receptions",
+		bytes.NewBufferString(`{"pvzId":""}`))
+	ctx := api.WithRole(req.Context(), "employee")
+	req = req.WithContext(ctx)
+
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	require.Equal(t, http.StatusBadRequest, rr.Code)
+	mr.AssertNotCalled(t, "CreateReception")
+}
+
+func TestCreateReception_BadUUID(t *testing.T) {
+	mr := new(mockRepo)
+	h := api.CreateReceptionHandler(mr)
+
+	req := httptest.NewRequest(http.MethodPost, "/receptions",
+		bytes.NewBufferString(`{"pvzId":"not‑uuid"}`))
+	ctx := api.WithRole(req.Context(), "employee")
+	req = req.WithContext(ctx)
+
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	require.Equal(t, http.StatusBadRequest, rr.Code)
+	mr.AssertNotCalled(t, "CreateReception")
+}
+
+func TestCreateReception_RepoErr(t *testing.T) {
+	mr := new(mockRepo)
+	h := api.CreateReceptionHandler(mr)
+
+	mr.On("CreateReception", mock.Anything, mock.Anything).
+		Return(assertAnErrorWithMessage("open reception")).Once()
+
+	req := httptest.NewRequest(http.MethodPost, "/receptions",
+		bytes.NewBufferString(`{"pvzId":"31ae2e29-0460-4748-a9f3-2b5747f78960"}`))
+	ctx := api.WithRole(req.Context(), "employee")
+	req = req.WithContext(ctx)
+
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	require.Equal(t, http.StatusBadRequest, rr.Code)
+	mr.AssertExpectations(t)
+}
+
+func TestCloseLastReception_Forbidden(t *testing.T) {
+	mr := new(mockRepo)
+	h := api.CloseLastReceptionHandler(mr)
+
+	req := httptest.NewRequest(http.MethodPost, "/pvz/111/close_last_reception", nil)
+	ctx := api.WithRole(req.Context(), "client")
+	req = req.WithContext(ctx)
+
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	require.Equal(t, http.StatusForbidden, rr.Code)
+	mr.AssertNotCalled(t, "CloseLastReception")
+}

@@ -2,6 +2,9 @@ package main
 
 import (
 	"fmt"
+	"net"
+	"net/http"
+
 	"github.com/51mans0n/avito-pvz-task/internal/api"
 	"github.com/51mans0n/avito-pvz-task/internal/db"
 	grpcserver "github.com/51mans0n/avito-pvz-task/internal/grpc"
@@ -11,8 +14,6 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
-	"net"
-	"net/http"
 )
 
 func main() {
@@ -50,12 +51,21 @@ func main() {
 	r.Use(logging.RequestLogger)
 	r.Use(metrics.PromMiddleware)
 
+	go func() {
+		logging.S().Infow("metrics server", "addr", ":9000")
+		if err := http.ListenAndServe(":9000", promhttp.Handler()); err != nil {
+			logging.S().Fatalw("metrics serve", "err", err)
+		}
+	}()
+
 	// prometheus
 	r.Get("/metrics", promhttp.Handler().ServeHTTP)
 
 	// Health-check
-	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("OK"))
+	r.Get("/health", func(w http.ResponseWriter, _ *http.Request) {
+		if _, err := w.Write([]byte("OK")); err != nil {
+			logging.S().Warnw("write health", "err", err)
+		}
 	})
 
 	// Dummy login (не требует авторизации)

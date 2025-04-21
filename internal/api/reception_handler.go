@@ -2,13 +2,16 @@ package api
 
 import (
 	"encoding/json"
+	"net/http"
+	"time"
+
+	"github.com/51mans0n/avito-pvz-task/internal/logging"
+
 	"github.com/51mans0n/avito-pvz-task/internal/db"
 	"github.com/51mans0n/avito-pvz-task/internal/metrics"
 	"github.com/51mans0n/avito-pvz-task/internal/model"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
-	"net/http"
-	"time"
 )
 
 // CreateReceptionHandler - employee создаёт приёмку
@@ -50,7 +53,9 @@ func CreateReceptionHandler(repo db.Repository) http.HandlerFunc {
 		metrics.ReceptionsAdded.Inc()
 
 		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(rec)
+		if err := json.NewEncoder(w).Encode(rec); err != nil {
+			logging.S().Warnw("encode rec", "err", err)
+		}
 	}
 }
 
@@ -74,6 +79,8 @@ func CloseLastReceptionHandler(repo db.Repository) http.HandlerFunc {
 			http.Error(w, `{"message":"`+err.Error()+`"}`, http.StatusBadRequest)
 			return
 		}
-		json.NewEncoder(w).Encode(rec)
+		if err := json.NewEncoder(w).Encode(rec); err != nil {
+			logging.S().Warnw("encode rec", "err", err)
+		}
 	}
 }
