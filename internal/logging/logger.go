@@ -5,7 +5,7 @@ import "go.uber.org/zap"
 // L  ― «сырое» *zap.Logger (нужен, когда хочется лог‑поля zap.Field).
 var L *zap.Logger
 
-// lg ― «сахарный» *zap.SugaredLogger (короткие методы Info / Error / Fatal).
+// lg ― «сахарный» *zap.SugaredLogger (короткие методы Info / Error / Fatal).
 var lg *zap.SugaredLogger
 
 // Init инициализирует логгер.
@@ -23,8 +23,8 @@ func Init(prod bool) {
 	lg = L.Sugar()
 }
 
-// Sync вызываем в `main` через defer.
+// Sync вызываем в `main` через defer.
 func Sync() { _ = L.Sync() }
 
-// S — получить «сахарный» логгер.
+// S — получить «сахарный» логгер.
 func S() *zap.SugaredLogger { return lg }

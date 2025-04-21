@@ -12,7 +12,7 @@ import (
 func DummyLoginHandler(w http.ResponseWriter, r *http.Request) {
 	role := r.URL.Query().Get("role")
 
-	// если query‑парам нет – пробуем JSON‑тело {"role":"…"}
+	// если query‑парам нет – пробуем JSON‑тело {"role":"…"}
 	if role == "" && r.Method == http.MethodPost {
 		var body struct {
 			Role string `json:"role"`

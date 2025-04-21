@@ -10,7 +10,7 @@ import (
 )
 
 func TestAuthMiddleware_OK(t *testing.T) {
-	// handler‑эхо проверит, что роль попала в context
+	// handler‑эхо проверит, что роль попала в context
 	h := api.AuthMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		role := api.GetRole(r.Context())
 		if role == "employee" {
